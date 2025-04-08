@@ -10,6 +10,200 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
     </div>
-    <script src="script.js"></script>
+    <script>
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const gravity = 0.5;
+      const friction = 0.9; // Increased friction for smoother stopping
+      const keys = {
+          left: false,
+          right: false,
+          up: false
+      };
+
+      const player = {
+          x: 50,
+          y: 200,
+          width: 50,
+          height: 50,
+          speed: 6, // Slightly increased speed for better responsiveness
+          dx: 0,
+          dy: 0,
+          grounded: false,
+          jumping: false,
+          score: 0 // Added score for gold collection
+      };
+
+      const platforms = [
+          { x: 100, y: 350, width: 600, height: 10 },
+          { x: 400, y: 250, width: 100, height: 10 }
+      ];
+
+      // Added gold collectibles
+      const goldPieces = [
+          { x: 450, y: 200, width: 20, height: 20, collected: false },
+          { x: 200, y: 300, width: 20, height: 20, collected: false }
+      ];
+
+      function drawPlayer() {
+          ctx.fillStyle = '#FF0000';
+          ctx.fillRect(player.x, player.y, player.width, player.height);
+      }
+
+      function drawPlatforms() {
+          ctx.fillStyle = '#654321';
+          platforms.forEach(platform => {
+              ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+          });
+      }
+
+      // Added function to draw gold pieces
+      function drawGold() {
+          ctx.fillStyle = '#FFD700';
+          goldPieces.forEach(gold => {
+              if (!gold.collected) {
+                  ctx.fillRect(gold.x, gold.y, gold.width, gold.height);
+              }
+          });
+      }
+
+      // Added function to check gold collection
+      function checkGoldCollision() {
+          goldPieces.forEach(gold => {
+              if (!gold.collected &&
+                  player.x < gold.x + gold.width &&
+                  player.x + player.width > gold.x &&
+                  player.y < gold.y + gold.height &&
+                  player.y + player.height > gold.y) {
+                  gold.collected = true;
+                  player.score += 1;
+              }
+          });
+      }
+
+      function clear() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function newPos() {
+          // Use delta time for smoother movement
+          const deltaTime = 1/60; // Assuming 60 FPS
+
+          player.x += player.dx * deltaTime * 60;
+          player.y += player.dy * deltaTime * 60;
+
+          if (!player.grounded) {
+              player.dy += gravity * deltaTime * 60;
+          }
+
+          player.dx *= Math.pow(friction, deltaTime * 60);
+
+          // Improved collision detection
+          player.grounded = false;
+          platforms.forEach(platform => {
+              // Check if player is falling onto platform
+              if (player.dy > 0 && // Falling
+                  player.x < platform.x + platform.width &&
+                  player.x + player.width > platform.x &&
+                  player.y + player.height <= platform.y &&
+                  player.y + player.height + player.dy >= platform.y) {
+                  player.grounded = true;
+                  player.dy = 0;
+                  player.y = platform.y - player.height;
+              }
+              // Check if player hits platform from below
+              else if (player.dy < 0 && // Rising
+                  player.x < platform.x + platform.width &&
+                  player.x + player.width > platform.x &&
+                  player.y >= platform.y + platform.height &&
+                  player.y + player.dy <= platform.y + platform.height) {
+                  player.dy = 0;
+                  player.y = platform.y + platform.height;
+              }
+          });
+
+          // Boundary checking with smoother handling
+          if (player.x < 0) {
+              player.x = 0;
+              player.dx = 0;
+          } else if (player.x + player.width > canvas.width) {
+              player.x = canvas.width - player.width;
+              player.dx = 0;
+          }
+          if (player.y < 0) {
+              player.y = 0;
+              player.dy = 0;
+          } else if (player.y + player.height > canvas.height) {
+              player.y = canvas.height - player.height;
+              player.grounded = true;
+              player.dy = 0;
+          }
+      }
+
+      function update() {
+          clear();
+          drawPlatforms();
+          drawGold(); // Added gold drawing
+          drawPlayer();
+          newPos();
+          checkGoldCollision(); // Added gold collision check
+
+          // Added score display
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = '20px Arial';
+          ctx.fillText(`Score: ${player.score}`, 10, 30);
+
+          requestAnimationFrame(update);
+      }
+
+      function moveRight() {
+          if (!keys.right) { // Prevent multiple keydown events
+              player.dx = player.speed;
+          }
+      }
+
+      function moveLeft() {
+          if (!keys.left) { // Prevent multiple keydown events
+              player.dx = -player.speed;
+          }
+      }
+
+      function jump() {
+          if (player.grounded && !player.jumping) {
+              player.jumping = true;
+              player.grounded = false;
+              player.dy = -12; // Slightly increased jump height for better feel
+          }
+      }
+
+      document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' && !keys.right) {
+              keys.right = true;
+              moveRight();
+          } else if (e.key === 'ArrowLeft' && !keys.left) {
+              keys.left = true;
+              moveLeft();
+          } else if (e.key === 'ArrowUp' && !keys.up) {
+              keys.up = true;
+              jump();
+          }
+      });
+
+      document.addEventListener('keyup', (e) => {
+          if (e.key === 'ArrowRight') {
+              keys.right = false;
+              if (!keys.left) player.dx = 0;
+          } else if (e.key === 'ArrowLeft') {
+              keys.left = false;
+              if (!keys.right) player.dx = 0;
+          } else if (e.key === 'ArrowUp') {
+              keys.up = false;
+              player.jumping = false;
+          }
+      });
+
+      update();
+    </script>
 </body>
 </html>
