@@ -132,25 +132,31 @@
 
       let lastTime = performance.now();
       function update() {
-          const currentTime = performance.now();
-          const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap deltaTime to avoid large jumps
-          lastTime = currentTime;
+        const currentTime = performance.now();
+        const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
+        lastTime = currentTime;
 
-          clear();
-          drawPlatforms();
-          drawGold(); // Draw gold pieces
-          drawPlayer();
-          newPos(deltaTime);
-          checkGoldCollision(); // Check for gold collection
-          requestAnimationFrame(update);
+        clear();
+        drawPlatforms();
+        drawGold();
+        drawPlayer();
+        drawScore(); // 👈 draw score on screen
+        handleInput(); // 👈 handle smooth input
+        newPos(deltaTime);
+        checkGoldCollision();
+        requestAnimationFrame(update);
       }
 
-      function moveRight() {
-          player.dx = player.speed;
+      function handleInput() {
+          if (keys.left) player.dx = -player.speed;
+          if (keys.right) player.dx = player.speed;
+          if (!keys.left && !keys.right) player.dx = 0; // stop when no input
       }
 
-      function moveLeft() {
-          player.dx = -player.speed;
+      function drawScore() {
+          ctx.fillStyle = '#000';
+          ctx.font = '20px Arial';
+          ctx.fillText(`Score: ${player.score}`, 10, 30);
       }
 
       function jump() {
@@ -174,16 +180,14 @@
           }
       });
 
-      document.addEventListener('keyup', (e) => {
-          if (e.key === 'ArrowRight') {
-              keys.right = false;
-          } else if (e.key === 'ArrowLeft') {
-              keys.left = false;
-          } else if (e.key === 'ArrowUp') {
-              keys.up = false;
-              player.jumping = false;
-          }
-      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') keys.right = true;
+        else if (e.key === 'ArrowLeft') keys.left = true;
+        else if (e.key === 'ArrowUp') {
+            keys.up = true;
+            jump();
+        }
+    });
 
       update();
     </script>
